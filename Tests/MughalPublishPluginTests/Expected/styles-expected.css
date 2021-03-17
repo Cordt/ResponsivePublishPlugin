@@ -20,5 +20,5 @@
     }
 }
 .image-container {
-    background: url('img/background.jpg')
+    background: var(--background-img-url);
 }

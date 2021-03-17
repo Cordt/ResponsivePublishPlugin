@@ -19,9 +19,8 @@ private struct TestWebsite: Website {
     enum SectionID: String, WebsiteSectionID {
         case test
     }
-
-    struct ItemMetadata: WebsiteItemMetadata {
-    }
+    
+    struct ItemMetadata: WebsiteItemMetadata { }
     
     var url = URL(string: "https://cordt.zermin.de")!
     var name = "test"
@@ -51,14 +50,22 @@ final class MughalPublishPluginTests: XCTestCase {
         Path("Resources")
     }
     
-    private var rewrites: [ImageRewrite] {
+    private func rewrites(using maxDimensions: [Int]) -> [ImageRewrite] {
         Plugin<TestWebsite>
             .rewrites(
                 from: resourcesFolderPath.appendingComponent("img"),
                 to: Path("img-optimized"),
-                for: [Image(name: "background", extension: .webP, imageData: Data(), sizeClass: .large)]
+                for: maxDimensions.map {
+                        ImageConfiguration(
+                            url: URL(fileURLWithPath: #file).appendingPathComponent("img/background.jpg"),
+                            extension: .jpg,
+                            targetExtension: .webp,
+                            targetSizes: [.init(fileName: "background-\(sizeClassFrom(upper: $0).fileSuffix)", dimensionsUpperBound: $0)]
+                        )
+                    }
             )
     }
+    
     
     // MARK: - Lifecycle
     
@@ -72,11 +79,14 @@ final class MughalPublishPluginTests: XCTestCase {
     override func tearDown() {
         super.tearDown()
         
-//        try? outputFolder?.delete()
+        try? outputFolder?.delete()
         try? Folder(path: Self.testDirPath.appendingComponent(".publish").absoluteString).delete()
     }
     
-    func testVariablesAreAddedToCss() throws {
+    
+    // MARK: - Tests
+    
+    func testCssIsRewritten() throws {
         try TestWebsite().publish(
             at: Self.testDirPath,
             using: [
@@ -96,56 +106,44 @@ final class MughalPublishPluginTests: XCTestCase {
             .readAsString()
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .filter { !" \n\t\r".contains($0) }
+        
         let expected = try? expectedFolder?
             .file(named: "styles-expected.css")
             .readAsString()
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .filter { !" \n\t\r".contains($0) }
+        
         XCTAssertEqual(output, expected)
     }
     
-    func testCssIsRewritten() throws {
-        try TestWebsite()
-            .publish(
-                at: Self.testDirPath,
-                using: [.copyResources()]
-            )
-        let stylesheet = try? outputFolder?.file(at: "css/styles.css").readAsString()
-        var result = stylesheet!
-        self.rewrites.forEach { rw in
-            print("rewriting")
-            result = Plugin<TestWebsite>.rewrite(
-                result,
-                with: rw
-            )
-        }
-        let expected = try? expectedFolder?
-            .file(named: "styles-expected.css")
-            .readAsString()
-            .trimmingCharacters(in: .newlines)
-            .filter { !" \n\t\r".contains($0) }
-        result = result
-            .trimmingCharacters(in: .newlines)
-            .filter { !" \n\t\r".contains($0) }
-        XCTAssertEqual(result, expected)
-    }
-    
     func testRewritesProduceCorrectPathes() {
+        // Different sizes produce different target file names
         var expectation: [ImageRewrite] = [
             .init(
                 source: .init(path: Path("Resources/img"), fileName: "background", extension: .jpg),
-                target: .init(path: Path("img-optimized"), fileName: "background", extension: .webp)
+                target: .init(path: Path("img-optimized"), fileName: "background-normal", extension: .webp),
+                targetSizeClass: .normal
             )
         ]
-        XCTAssertEqual(self.rewrites, expectation)
+        XCTAssertEqual(self.rewrites(using: [1200]), expectation)
+        
+        expectation = [
+            .init(
+                source: .init(path: Path("Resources/img"), fileName: "background", extension: .jpg),
+                target: .init(path: Path("img-optimized"), fileName: "background-extra-small", extension: .webp),
+                targetSizeClass: .extraSmall
+            )
+        ]
+        XCTAssertEqual(self.rewrites(using: [600]), expectation)
         
         expectation = [
             .init(
                 source: .init(path: Path("Resources/img/"), fileName: "background", extension: .jpg),
-                target: .init(path: Path("/img-optimized"), fileName: "background", extension: .webp)
+                target: .init(path: Path("/img-optimized"), fileName: "background-normal", extension: .webp),
+                targetSizeClass: .normal
             )
         ]
-        XCTAssertEqual(self.rewrites, expectation)
+        XCTAssertEqual(self.rewrites(using: [1200]), expectation)
     }
     
     func testCamelCaseIsChangedToKebap() {

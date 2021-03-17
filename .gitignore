@@ -3,5 +3,6 @@
 Package.resolved
 .swiftpm
 /Packages
+/Tests/MughalPublishPluginTests/Output
 /*.xcodeproj
 xcuserdata/

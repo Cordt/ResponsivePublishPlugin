@@ -12,7 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "Publish", url: "https://github.com/johnsundell/publish.git", from: "0.7.0"),
-        .package(name: "Mughal", url: "https://github.com/Cordt/mughal.git", .branch("main")),
+        .package(name: "Mughal", url: "https://github.com/Cordt/Mughal", .branch("main")),
     ],
     targets: [
         .target(

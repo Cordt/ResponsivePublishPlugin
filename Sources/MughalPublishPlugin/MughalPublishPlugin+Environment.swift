@@ -9,25 +9,26 @@ import Foundation
 import Mughal
 
 struct Environment {
-    var generateWebP: (_ quality: Quality, _ urls: [URL]) -> Parallel<[Image]>
+    var generateImages: (_ quality: Quality, _ configurations: [ImageConfiguration]) -> Parallel<[Image]>
     
     static func live() -> Self {
-        return Environment { quality, urls in
-            WebP.generateWebP(with: quality, from: urls)
+        return Environment { quality, configs in
+            WebP.generateImages(with: quality, for: configs)
         }
     }
     
     #if DEBUG
     static func mock() -> Self {
-        return Environment { _, urls in
+        return Environment { _, configs in
             return Parallel<[Image]> {
-                let images = urls.reduce([Image]()) { current, url in
-                    current + Mughal.SizeClass.allCases.map { sizeClass in
+                let images = configs.reduce([Image]()) { current, config in
+                    current + config.targetSizes.map { size in
                         return Image(
-                            name: String(url.lastPathComponent.split(separator: ".").first!),
-                            extension: .webP,
+                            name: size.fileName,
+                            extension: .webp,
                             imageData: Data(),
-                            sizeClass: sizeClass
+                            width: size.dimensionsUpperBound / 2,
+                            height: size.dimensionsUpperBound
                         )
                     }
                 }

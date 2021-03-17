@@ -25,20 +25,44 @@ extension Plugin {
             let urls: [URL] = try context
                 .folder(at: from)
                 .files
-                .reduce([URL]()) { $0 + [URL(fileURLWithPath: $1.path)] }
-            
+                .reduce([URL]()) { current, file in
+                    current + [URL(fileURLWithPath: file.path)]
+                }
+            let configs: [ImageConfiguration] = urls.compactMap { url in
+                let components = url
+                        .lastPathComponent
+                        .split(separator: ".")
+                guard let fileName = components.first,
+                      let `extension` = components.last
+                        .flatMap({ Image.Extension.init(rawValue: String($0)) })
+                else {
+                    print("Could not extract file name or extension from source image.")
+                    return nil
+                }
+                
+                return ImageConfiguration(
+                    url: url,
+                    extension: `extension`,
+                    targetExtension: .webp,
+                    targetSizes: SizeClass.allCases.map { sizeClass in
+                        ImageConfiguration.Size(
+                            fileName: "\(fileName)-\(sizeClass.fileSuffix)",
+                            dimensionsUpperBound: sizeClass.upperBound
+                        )
+                    }
+                )
+            }
             var images = [Image]()
 
             // Generate WebP images from all images in all responsive sizes
-            env.generateWebP(.high, urls)
+            env.generateImages(.high, configs)
                 .run { images.append(contentsOf: $0) }
             
             // Save generated images to the optimized images destination path
             do {
                 let outputFolder = try context.createOutputFolder(at: at)
                 try images.forEach {
-                    let filePath: String = "\($0.name)-\($0.sizeClass).\($0.`extension`)"
-                    try outputFolder.createFile(at: filePath, contents: $0.imageData)
+                    try outputFolder.createFile(at: $0.fullFileName, contents: $0.imageData)
                 }
             } catch {
                 print("Failed to write image to output folder")
@@ -46,12 +70,10 @@ extension Plugin {
 
             // Rewrite output css file with optimized images
             do {
-                let imageRewrites = rewrites(from: from, to: at, for: images)
+                let imageRewrites = rewrites(from: from, to: at, for: configs)
                 let cssFile = try context.outputFile(at: stylesheet)
                 var css = try cssFile.readAsString()
-                imageRewrites.forEach { imageRewrite in
-                    css = rewrite(css, with: imageRewrite)
-                }
+                css = rewrite(css, with: imageRewrites)
                 try cssFile.write(css)
             }
             catch let error {
@@ -61,20 +83,33 @@ extension Plugin {
     }
     
     
-    static func rewrites(from source: Path, to target: Path, for: [Image]) -> [ImageRewrite] {
-        `for`.map { image in
-            ImageRewrite(
-                // FIXME: Source extension hard coded - should be dynamic from image
-                source: .init(path: source, fileName: image.name, extension: .jpg),
-                target: .init(path: target, fileName: image.name, extension: ImageRewrite.FileExtension(from: image.extension))
-            )
+    static func rewrites(from source: Path, to target: Path, for: [ImageConfiguration]) -> [ImageRewrite] {
+        `for`.flatMap { config in
+            config.targetSizes.map { size in
+                ImageRewrite(
+                    source: .init(path: source, fileName: config.fileName, extension: config.extension),
+                    target: .init(path: target, fileName: size.fileName, extension: config.targetExtension),
+                    targetSizeClass: sizeClassFrom(upper: size.dimensionsUpperBound)
+                )
+            }
         }
     }
     
-    static func rewrite(_ stylesheet: String, with rewrites: ImageRewrite...) -> String {
+    static func rewrite(_ stylesheet: String, with rewrites: [ImageRewrite]) -> String {
         // Create css-variable declarations for the different size classes
         var declaration: String = ""
         var indentation: String = ""
+        
+        func declarations(for sizeClass: SizeClass, with indentation: String) -> String {
+            rewrites
+                .filter { $0.targetSizeClass == sizeClass }
+                .sorted(by: { $0.variableName < $1.variableName })
+                .reduce("") { current, rewrite in
+                    current +
+                        "\(indentation)\(rewrite.variableName): url('\(rewrite.target.path)/\(rewrite.target.fileName).\(rewrite.target.extension)');\n"
+            }
+        }
+        
         SizeClass.allCases.forEach { sizeClass in
             switch sizeClass {
             case .extraSmall:
@@ -90,12 +125,9 @@ extension Plugin {
                 declaration += "@media screen and (min-width: \(sizeClass.minWidth)px) {\n\t:root {\n"
                 indentation = "\t\t"
             }
-            rewrites.forEach { rewrite in
-                declaration +=
-                    """
-                    \(indentation)\(rewrite.variableName): url('\(rewrite.target.path)/\(rewrite.target.fileName)-\(sizeClass.fileSuffix).\(rewrite.target.extension)');\n
-                    """
-            }
+            
+            declaration += declarations(for: sizeClass, with: indentation)
+            
             switch sizeClass {
             case .extraSmall:   declaration += "}\n\n"
             case .small:        declaration += "\t}\n}\n\n"
@@ -105,15 +137,19 @@ extension Plugin {
         }
 
         var updated: String = stylesheet
-
+        let prefix: String = "Resources/"
+        
         // Replace the actual image url with the variable
-        rewrites.forEach { image in
-            updated = updated.replacingOccurrences(of: "url('assets/img/\(image.source.fileName).\(image.source.extension)')", with: "var(\(image.variableName))")
-            updated = updated.replacingOccurrences(of: "url(assets/img/\(image.target.fileName).\(image.source.extension))", with: "var(\(image.variableName))")
-            updated = updated.replacingOccurrences(of: "url(assets/img/\"\(image.target.fileName).\(image.source.extension)\")", with: "var(\(image.variableName))")
+        rewrites.forEach { rewrite in
+            precondition(rewrite.source.path.string.hasPrefix(prefix), "Only images from the resources path can be rewritten")
+            let sourceImagePath: String = String(rewrite.source.path.string.dropFirst(prefix.count))
+            updated = updated.replacingOccurrences(of: "url('\(sourceImagePath)/\(rewrite.source.fileName).\(rewrite.source.extension)')", with: "var(\(rewrite.variableName))")
+            updated = updated.replacingOccurrences(of: "url(\(sourceImagePath)/\(rewrite.target.fileName).\(rewrite.source.extension))", with: "var(\(rewrite.variableName))")
+            updated = updated.replacingOccurrences(of: "url(\(sourceImagePath)/\"\(rewrite.target.fileName).\(rewrite.source.extension)\")", with: "var(\(rewrite.variableName))")
         }
 
         // Prepend the variable declarations
         return declaration + updated
     }
+    
 }

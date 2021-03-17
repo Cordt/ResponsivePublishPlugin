@@ -10,20 +10,20 @@ import Publish
 import Files
 import Mughal
 
-// TODO: Align image extensions between the packages (ideally the extensions are in Mughal only)
-// TODO: Align size classes between the packages (ideally the size classes are in the Plugin only)
+
 struct ImageRewrite: Equatable {
     struct ImageUrl: Equatable {
         let path: Path
+        /// File name including any suffixes (for sizes)
         let fileName: String
-        let `extension`: FileExtension
+        let `extension`: Image.Extension
 
         var filePath: String { "\(path)/\(fileName).\(`extension`.rawValue)" }
         
         init(
             path: Path,
             fileName: String,
-            `extension`: FileExtension
+            `extension`: Image.Extension
         ) {
             var pathString = path.absoluteString.drop(while: { $0 == "/" })
             pathString = pathString.dropLast(pathString.last == "/" ? 1 : 0)
@@ -33,23 +33,17 @@ struct ImageRewrite: Equatable {
         }
     }
 
-    enum FileExtension: String, Equatable {
-        case jpg
-        case webp
-        
-        init(from: Image.Extension) {
-            switch from {
-            case .webP: self = .webp
-            }
-        }
-    }
-
     let source: ImageUrl
     let target: ImageUrl
+    let targetSizeClass: SizeClass
 
     var variableName: String { "--\(source.fileName)-img-url" }
 }
 
+/// Reflects 'natural' css breakpoints
+///
+/// See this article by David Gilbertson for reference: [The correct way to do css breakpoints](https://www.freecodecamp.org/news/the-100-correct-way-to-do-css-breakpoints-88d6a5ba1862/)
+/// extraLarge is not covered, as the images are defined by their upper bound, which this size class does not have by default
 enum SizeClass: String, CaseIterable {
     case extraSmall
     case small
@@ -65,6 +59,27 @@ enum SizeClass: String, CaseIterable {
         case .large:        return 1200
         }
     }
+    var upperBound: Int {
+        switch self {
+        case .extraSmall:   return 600
+        case .small:        return 900
+        case .normal:       return 1200
+        case .large:        return 1800
+        }
+    }
+}
+
+func sizeClassFrom(upper bound: Int) -> SizeClass {
+    sizeClassFrom(dimensions: (bound, bound))
+}
+
+func sizeClassFrom(dimensions: (Int, Int)) -> SizeClass {
+    SizeClass.allCases
+        .map { ($0, $0.upperBound) }
+        .sorted { $0.1 < $1.1 }
+        .filter { max(dimensions.0, dimensions.1) <= $0.1 }
+        .map { $0.0 }
+        .first ?? .extraSmall
 }
 
 extension String {
