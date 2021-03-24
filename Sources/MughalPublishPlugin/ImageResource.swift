@@ -13,12 +13,12 @@ import Mughal
 
 struct ImageRewrite: Equatable {
     struct ImageUrl: Equatable {
-        let path: Path
+        var path: Path
         /// File name including any suffixes (for sizes)
-        let fileName: String
-        let `extension`: Image.Extension
+        var fileName: String
+        var `extension`: Image.Extension
 
-        var filePath: String { "\(path)/\(fileName).\(`extension`.rawValue)" }
+        var filePath: String { "\(path)/\(fileName).\(`extension`)" }
         
         init(
             path: Path,
@@ -31,13 +31,41 @@ struct ImageRewrite: Equatable {
             self.fileName = fileName
             self.`extension` = `extension`
         }
+        
+        /// Checks whether the other image url is at the same location, except for being at a different relative position
+        /// Returns the Path difference between the two image urls, if they point at the same location and nil, otherwise
+        func contains(other: ImageUrl) -> Path? {
+            guard self.fileName == other.fileName,
+                  self.extension == other.extension,
+                  self.path.string.count >= other.path.string.count
+            else { return nil }
+            
+            let path1 = self.path.absoluteString
+            let path2 = other.path.absoluteString
+
+            let prefixedPath = String(path1.reversed())
+            let containedPath = String(path2.reversed())
+
+            guard path1.count != path2.count else { return Path("") }
+            var pathPrefix = path1.count > path2.count ? path1: path2
+            pathPrefix
+                .removeLast(containedPath.commonPrefix(with: prefixedPath).count)
+            pathPrefix
+                .removeFirst()
+            pathPrefix += "/"
+            
+            return Path(pathPrefix)
+        }
     }
 
-    let source: ImageUrl
-    let target: ImageUrl
-    let targetSizeClass: SizeClass
+    var source: ImageUrl
+    var target: ImageUrl
+    var targetSizeClass: SizeClass
+    var variableNameSuffix: String? = nil
 
-    var variableName: String { "--\(source.fileName)-img-url" }
+    var variableName: String {
+        let suffix = variableNameSuffix != nil ? "-\(variableNameSuffix!)" : ""
+        return "--\(source.fileName)\(suffix)-img-url" }
 }
 
 /// Reflects 'natural' css breakpoints

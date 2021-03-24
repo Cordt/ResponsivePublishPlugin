@@ -1,24 +1,24 @@
 :root {
-    --background-img-url: url('img-optimized/background-extra-small.webp');
+    --background-path-1-img-url: url('img-optimized/background-extra-small.webp');
 }
 
 @media screen and (min-width: 600px) {
     :root {
-        --background-img-url: url('img-optimized/background-small.webp');
+        --background-path-1-img-url: url('img-optimized/background-small.webp');
     }
 }
 
 @media screen and (min-width: 900px) {
     :root {
-        --background-img-url: url('img-optimized/background-normal.webp');
+        --background-path-1-img-url: url('img-optimized/background-normal.webp');
     }
 }
 
 @media screen and (min-width: 1200px) {
     :root {
-        --background-img-url: url('img-optimized/background-large.webp');
+        --background-path-1-img-url: url('img-optimized/background-large.webp');
     }
 }
 .image-container {
-    background: var(--background-img-url);
+    background: var(--background-path-1-img-url);
 }

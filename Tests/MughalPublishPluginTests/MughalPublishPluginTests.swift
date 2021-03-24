@@ -51,19 +51,18 @@ final class MughalPublishPluginTests: XCTestCase {
     }
     
     private func rewrites(using maxDimensions: [Int]) -> [ImageRewrite] {
-        Plugin<TestWebsite>
-            .rewrites(
-                from: resourcesFolderPath.appendingComponent("img"),
-                to: Path("img-optimized"),
-                for: maxDimensions.map {
-                        ImageConfiguration(
-                            url: URL(fileURLWithPath: #file).appendingPathComponent("img/background.jpg"),
-                            extension: .jpg,
-                            targetExtension: .webp,
-                            targetSizes: [.init(fileName: "background-\(sizeClassFrom(upper: $0).fileSuffix)", dimensionsUpperBound: $0)]
-                        )
-                    }
-            )
+        MughalPublishPlugin.rewrites(
+            from: resourcesFolderPath.appendingComponent("img"),
+            to: Path("img-optimized"),
+            for: maxDimensions.map {
+                    ImageConfiguration(
+                        url: URL(fileURLWithPath: #file).appendingPathComponent("img/background.jpg"),
+                        extension: .jpg,
+                        targetExtension: .webp,
+                        targetSizes: [.init(fileName: "background-\(sizeClassFrom(upper: $0).fileSuffix)", dimensionsUpperBound: $0)]
+                    )
+                }
+        )
     }
     
     
@@ -126,7 +125,7 @@ final class MughalPublishPluginTests: XCTestCase {
             )
         ]
         XCTAssertEqual(self.rewrites(using: [1200]), expectation)
-        
+        print(self.rewrites(using: [1200]))
         expectation = [
             .init(
                 source: .init(path: Path("Resources/img"), fileName: "background", extension: .jpg),
