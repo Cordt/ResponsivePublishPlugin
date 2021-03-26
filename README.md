@@ -11,7 +11,7 @@ let package = Package(
     ...
     dependencies: [
         ...
-        .package(name: "Mughal", url: "https://github.com/Cordt/Mughal", .branch("main"))
+        .package(name: "MughalPublishPlugin", url: "https://github.com/Cordt/Mughal", .branch("main"))
     ],
     targets: [
         .target(

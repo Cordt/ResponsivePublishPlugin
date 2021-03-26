@@ -151,4 +151,22 @@ final class MughalPublishPluginTests: XCTestCase {
             "extra-small"
         )
     }
+    
+    func testImageTagsAreRewritten() throws {
+        let staticPages: [Page] = [
+            Page(
+                path: Path("Home"),
+                content: Content(
+                    title: "Page - Home",
+                    description: "Description of page",
+                    body: Content.Body(
+                        node: .div(
+                            .img(.src(""))
+                        )
+                    ),
+                    lastModified: Date()
+                )
+            )
+        ]
+    }
 }

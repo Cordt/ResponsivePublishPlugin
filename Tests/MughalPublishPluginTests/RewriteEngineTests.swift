@@ -1,5 +1,5 @@
 //
-//  ParserTests.swift
+//  RewriteEngineTests.swift
 //  MughalPublishPlugin
 //
 //  Created by Cordt Zermin on 20.03.21.
@@ -108,6 +108,57 @@ final class ParserTests: XCTestCase {
         """
     }
     
+    fileprivate var html: String {
+        """
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>Test page title</title>
+            </head>
+            <body>
+                <h1>HTML Body</h1>
+                <img src="img/background.jpg" alt="Background Image" style="width:100%" />
+                <img alt="Background Image" src="img/detail/background.jpg" style="width:128px;height:128px;" />
+                <a href="/imprint">
+                    <img src="assets/img/opaque.png" alt="Why am I opaque?" style="width:42px;height:42px;" />
+                </a>
+                <img src="assets/img/background.jpg" alt="Background" width="500" height="600" />
+                <img src="assets/img/background.jpg" />
+            </body>
+        </html>
+        """
+    }
+    
+    fileprivate var expectedHtml: String {
+        """
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>Test page title</title>
+            </head>
+            <body>
+                <h1>HTML Body</h1>
+                <img srcset="
+                    img-optimized/background-normal.webp 1200w,
+                    img-optimized/background-large.webp 1800w"
+                    src="img/background.jpg" alt="Background Image" style="width:100%" />
+                <img alt="Background Image" src="img/detail/background.jpg" style="width:128px;height:128px;" />
+                <a href="/imprint">
+                    <img src="assets/img/opaque.png" alt="Why am I opaque?" style="width:42px;height:42px;" />
+                </a>
+                <img srcset="
+                    assets/img-optimized/background-normal.webp 1200w,
+                    assets/img-optimized/background-large.webp 1800w"
+                    src="assets/img/background.jpg" alt="Background" width="500" height="600" />
+                <img srcset="
+                    assets/img-optimized/background-normal.webp 1200w,
+                    assets/img-optimized/background-large.webp 1800w"
+                    src="assets/img/background.jpg" />
+            </body>
+        </html>
+        """
+    }
+    
     fileprivate var expectedImagePaths: [ImageRewrite.ImageUrl] {
         [
             .init(path: "img/", fileName: "background", extension: .jpg),
@@ -125,13 +176,13 @@ final class ParserTests: XCTestCase {
     // MARK: - Tests
     
     func testImagePathsAreFound() throws {
-        let imagePaths = imageUrls(from: css)
+        let imagePaths = imageUrlsFrom(stylesheet: css)
         XCTAssertEqual(imagePaths, expectedImagePaths)
         
     }
     
-    func testRewrites() {
-        let updatedStylesheet = rewrite(css, with: [
+    func testStylesheetRewrites() {
+        let updatedStylesheet = rewrite(stylesheet: css, with: [
             ImageRewrite(
                 source: .init(
                     path: Path("Resources/img"),
@@ -155,6 +206,47 @@ final class ParserTests: XCTestCase {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .filter { !" \n\t\r".contains($0) }
         
+        XCTAssertEqual(result, expectation)
+    }
+    
+    func testHtmlRewrites() {
+        let updatedHtml = rewrite(html: html, with: [
+            ImageRewrite(
+                source: .init(
+                    path: Path("Resources/img"),
+                    fileName: "background",
+                    extension: .jpg
+                ),
+                target: .init(
+                    path: Path("img-optimized"),
+                    fileName: "background-normal",
+                    extension: .webp
+                ),
+                targetSizeClass: .normal
+            ),
+            ImageRewrite(
+                source: .init(
+                    path: Path("Resources/img"),
+                    fileName: "background",
+                    extension: .jpg
+                ),
+                target: .init(
+                    path: Path("img-optimized"),
+                    fileName: "background-large",
+                    extension: .webp
+                ),
+                targetSizeClass: .large
+            )
+        ])
+        
+        let result = updatedHtml
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { !" \n\t\r".contains($0) }
+        
+        let expectation = expectedHtml
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { !" \n\t\r".contains($0) }
+            
         XCTAssertEqual(result, expectation)
     }
 }

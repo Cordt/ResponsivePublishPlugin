@@ -7,14 +7,13 @@
 
 import Foundation
 import Publish
+import Ink
 import Files
 import Mughal
 
 
 var env: Environment = .live()
 
-// TODO: Guard against missing or superfluous leading or trailing slashes
-// TODO: Do not hardcode the original target path (assets/img/...)
 extension Plugin {
     public static func generateOptimizedImages(
         from: Path = Path("Resources/assets/img"),
@@ -28,10 +27,11 @@ extension Plugin {
                 .reduce([URL]()) { current, file in
                     current + [URL(fileURLWithPath: file.path)]
                 }
+            
             let configs: [ImageConfiguration] = urls.compactMap { url in
                 let components = url
-                        .lastPathComponent
-                        .split(separator: ".")
+                    .lastPathComponent
+                    .split(separator: ".")
                 guard let fileName = components.first,
                       let `extension` = components.last
                         .flatMap({ Image.Extension.init(rawValue: String($0)) })
@@ -53,7 +53,7 @@ extension Plugin {
                 )
             }
             var images = [Image]()
-
+            
             // Generate WebP images from all images in all responsive sizes
             env.generateImages(.high, configs)
                 .run { images.append(contentsOf: $0) }
@@ -64,20 +64,37 @@ extension Plugin {
                 try images.forEach {
                     try outputFolder.createFile(at: $0.fullFileName, contents: $0.imageData)
                 }
-            } catch {
+            }
+            catch {
                 print("Failed to write image to output folder")
             }
-
+            
+            let imageRewrites = rewrites(from: from, to: at, for: configs)
+            
             // Rewrite output css file with optimized images
             do {
-                let imageRewrites = rewrites(from: from, to: at, for: configs)
                 let cssFile = try context.outputFile(at: stylesheet)
                 var css = try cssFile.readAsString()
-                css = rewrite(css, with: imageRewrites)
+                css = rewrite(stylesheet: css, with: imageRewrites)
                 try cssFile.write(css)
             }
             catch let error {
-                print("Failed to rewrite files with error: \(error)")
+                print("Failed to rewrite CSS files with error: \(error)")
+            }
+
+            // Rewrite output html files with optimized images
+            do {
+                let root = try context.outputFolder(at: "")
+                let files = root.files.recursive
+                
+                for file in files where file.extension == "html" {    
+                    var html = try file.readAsString()
+                    html = rewrite(html: html, with: imageRewrites)
+                    try file.write(html)
+                }
+            }
+            catch let error {
+                print("Failed to rewrite HTML files with error: \(error)")
             }
         }
     }
