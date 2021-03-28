@@ -63,6 +63,10 @@ struct ImageConfiguration {
         self.targetExtension = targetExtension
         self.targetSizes = targetSizes
     }
+    
+    func fileName(for sizeClass: SizeClass) -> String {
+        "\(self.fileName)-\(sizeClass.fileSuffix)"
+    }
 }
 
 struct ExportableImage {
@@ -137,7 +141,7 @@ func rewrites(from source: Path, to target: Path, for config: ImageConfiguration
     config.targetSizes.map { size in
         ImageRewrite(
             source: .init(path: source, fileName: config.fileName, extension: config.extension),
-            target: .init(path: target, fileName: "\(config.fileName)-\(size.fileSuffix)", extension: config.targetExtension),
+            target: .init(path: target, fileName: config.fileName(for: size), extension: config.targetExtension),
             targetSizeClass: size
         )
     }

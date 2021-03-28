@@ -22,10 +22,10 @@ struct Environment {
         return Environment { configs in
             return Parallel<[ExportableImage]> {
                 let images = configs.reduce([ExportableImage]()) { current, config in
-                    current + config.targetSizes.compactMap { size in
-                        guard let image = Image(width: size.upperBound / 2, height: size.upperBound) else { return nil }
+                    current + config.targetSizes.compactMap { sizeClass in
+                        guard let image = Image(width: sizeClass.upperBound / 2, height: sizeClass.upperBound) else { return nil }
                         return ExportableImage(
-                            name: config.fileName,
+                            name: config.fileName(for: sizeClass),
                             extension: .webp,
                             image: image
                         )
@@ -46,7 +46,7 @@ fileprivate func reducedImaged(for configurations: [ImageConfiguration]) -> Para
                 let targetSize = sizeThatFits(for: image.size, within: sizeClass.upperBound)
                 guard let resizedImage = image.resizedTo(width: targetSize.width, height: targetSize.height) else { return nil }
                 return ExportableImage(
-                    name: config.fileName,
+                    name: config.fileName(for: sizeClass),
                     extension: config.targetExtension,
                     image: resizedImage
                 )

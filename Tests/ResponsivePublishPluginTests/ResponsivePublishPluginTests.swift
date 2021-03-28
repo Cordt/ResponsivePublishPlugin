@@ -179,4 +179,29 @@ final class ResponsivePublishPluginTests: XCTestCase {
         
         XCTAssertEqual(output, expected)
     }
+    
+    func testImagesForSizeClassesAreCreated() throws {
+        try TestWebsite().publish(
+            at: Self.testDirPath,
+            using: [
+                .copyResources(),
+                .installPlugin(
+                    .generateOptimizedImages(
+                        from: resourcesFolderPath.appendingComponent("img"),
+                        at: Path("img-optimized"),
+                        rewriting: Path("css/styles.css")
+                    )
+                )
+            ]
+        )
+        
+        let output = try? outputFolder?
+            .subfolder(at: "img-optimized")
+            .files
+            .names()
+            .sorted()
+        
+        XCTAssertEqual(output?.count, 4)
+        XCTAssertEqual(output, ["background-extra-small.webp", "background-large.webp", "background-normal.webp", "background-small.webp"])
+    }
 }
