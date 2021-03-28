@@ -1,25 +1,24 @@
 // swift-tools-version:5.3
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
-    name: "MughalPublishPlugin",
+    name: "ResponsivePublishPlugin",
     products: [
         .library(
-            name: "MughalPublishPlugin",
-            targets: ["MughalPublishPlugin"]),
+            name: "ResponsivePublishPlugin",
+            targets: ["ResponsivePublishPlugin"]),
     ],
     dependencies: [
         .package(name: "Publish", url: "https://github.com/johnsundell/publish.git", from: "0.7.0"),
-        .package(name: "Mughal", url: "https://github.com/Cordt/Mughal", .branch("main")),
+        .package(name: "SwiftGD", url: "https://github.com/twostraws/SwiftGD.git", from: "2.0.0"),
     ],
     targets: [
         .target(
-            name: "MughalPublishPlugin",
-            dependencies: ["Publish", "Mughal"]),
+            name: "ResponsivePublishPlugin",
+            dependencies: ["Publish", "SwiftGD"]),
         .testTarget(
-            name: "MughalPublishPluginTests",
-            dependencies: ["MughalPublishPlugin"]),
+            name: "ResponsivePublishPluginTests",
+            dependencies: ["ResponsivePublishPlugin"]),
     ]
 )

@@ -1,6 +1,6 @@
 //
-//  MughalPublishPlugin.swift
-//  MughalPublishPlugin
+//  ResponsivePublishPlugin.swift
+//  ResponsivePublishPlugin
 //
 //  Created by Cordt Zermin on 14.03.21.
 //
@@ -9,7 +9,7 @@ import Foundation
 import Publish
 import Ink
 import Files
-import Mughal
+import SwiftGD
 
 
 var env: Environment = .live()
@@ -20,7 +20,7 @@ extension Plugin {
         at: Path = Path("assets/img-optimized"),
         rewriting stylesheet: Path = Path("assets/css/styles.css")) -> Self
     {
-        Plugin(name: "Mughal") { context in
+        Plugin(name: "Responsive") { context in
             let urls: [URL] = try context
                 .folder(at: from)
                 .files
@@ -29,47 +29,30 @@ extension Plugin {
                 }
             
             let configs: [ImageConfiguration] = urls.compactMap { url in
-                let components = url
-                    .lastPathComponent
-                    .split(separator: ".")
-                guard let fileName = components.first,
-                      let `extension` = components.last
-                        .flatMap({ Image.Extension.init(rawValue: String($0)) })
-                else {
-                    print("Could not extract file name or extension from source image.")
-                    return nil
-                }
-                
                 return ImageConfiguration(
                     url: url,
-                    extension: `extension`,
                     targetExtension: .webp,
-                    targetSizes: SizeClass.allCases.map { sizeClass in
-                        ImageConfiguration.Size(
-                            fileName: "\(fileName)-\(sizeClass.fileSuffix)",
-                            dimensionsUpperBound: sizeClass.upperBound
-                        )
-                    }
+                    targetSizes: SizeClass.allCases
                 )
             }
-            var images = [Image]()
+            var images = [ExportableImage]()
             
             // Generate WebP images from all images in all responsive sizes
-            env.generateImages(.high, configs)
+            env.generateImages(configs)
                 .run { images.append(contentsOf: $0) }
             
             // Save generated images to the optimized images destination path
             do {
                 let outputFolder = try context.createOutputFolder(at: at)
                 try images.forEach {
-                    try outputFolder.createFile(at: $0.fullFileName, contents: $0.imageData)
+                    try outputFolder.createFile(at: $0.fullFileName, contents: $0.image.export(as: .webp))
                 }
             }
             catch {
                 print("Failed to write image to output folder")
             }
             
-            let imageRewrites = rewrites(from: from, to: at, for: configs)
+            let imageRewrites = configs.flatMap { rewrites(from: from, to: at, for: $0) }
             
             // Rewrite output css file with optimized images
             do {
@@ -90,6 +73,7 @@ extension Plugin {
                 for file in files where file.extension == "html" {    
                     var html = try file.readAsString()
                     html = rewrite(html: html, with: imageRewrites)
+                    
                     try file.write(html)
                 }
             }

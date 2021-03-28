@@ -1,26 +1,14 @@
 //
 //  Rewrites.swift
-//  MughalPublishPlugin
+//  ResponsivePublishPlugin
 //
 //  Created by Cordt Zermin on 20.03.21.
 //
 
 import Foundation
 import Publish
-import Mughal
+import SwiftGD
 
-
-func rewrites(from source: Path, to target: Path, for: [ImageConfiguration]) -> [ImageRewrite] {
-    `for`.flatMap { config in
-        config.targetSizes.map { size in
-            ImageRewrite(
-                source: .init(path: source, fileName: config.fileName, extension: config.extension),
-                target: .init(path: target, fileName: size.fileName, extension: config.targetExtension),
-                targetSizeClass: sizeClassFrom(upper: size.dimensionsUpperBound)
-            )
-        }
-    }
-}
 
 fileprivate func fileSpecificRewrites(for rewrites: [ImageRewrite], and urls: [ImageRewrite.ImageUrl]) -> [ImageRewrite] {
     return rewrites.reduce([ImageRewrite]()) { current, rewrite in

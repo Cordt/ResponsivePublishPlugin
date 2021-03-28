@@ -1,13 +1,13 @@
 //
 //  URLParser.swift
-//  MughalPublishPlugin
+//  ResponsivePublishPlugin
 //
 //  Created by Cordt Zermin on 25.03.21.
 //
 
 import Foundation
 import Publish
-import Mughal
+import SwiftGD
 
 fileprivate let imageTagPattern: String = #"<img\s*(?:src\s*\=\s*[\'\"]((\.\.\/|[A-Za-z-_\+\d]+\/)*)([A-Za-z-_\+\d]*).(jpg|png)[\'\"].*?\s*|[a-z]+?\s*\=\s*[\'\"].*?[\'\"].*?\s*)+[\s\/]*?>"#
 fileprivate let imagePathPattern: String = #"url\(['"]?((\.\.\/|[A-Za-z-_\+\d]+\/)*)([A-Za-z-_\+\d]*).(jpg|png){1}['"]?\);"#
@@ -45,7 +45,7 @@ fileprivate func imageUrls(from: String, using pattern: String) -> [ImageRewrite
         return result
             .compactMap { match -> ImageRewrite.ImageUrl? in
                 guard match.count == 4,
-                      let `extension` = Image.Extension(rawValue: match[3])
+                      let `extension` = ImageFormat(rawValue: match[3])
                 else { return nil }
                 return ImageRewrite.ImageUrl(
                     path: Path(match[0]),

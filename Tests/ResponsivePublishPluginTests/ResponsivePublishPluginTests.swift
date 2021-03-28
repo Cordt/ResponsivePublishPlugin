@@ -1,6 +1,6 @@
 //
-//  MughalPublishPluginTests.swift
-//  MughalPublishPlugin
+//  ResponsivePublishPluginTests.swift
+//  ResponsivePublishPlugin
 //
 //  Created by Cordt Zermin on 14.03.21.
 //
@@ -9,9 +9,8 @@ import XCTest
 import Publish
 import Plot
 import Files
-import Mughal
 
-@testable import MughalPublishPlugin
+@testable import ResponsivePublishPlugin
 
 // MARK: - TestWebsite
 
@@ -29,7 +28,7 @@ private struct TestWebsite: Website {
     var imagePath: Path? = nil
 }
 
-final class MughalPublishPluginTests: XCTestCase {
+final class ResponsivePublishPluginTests: XCTestCase {
     
     // MARK: - Properties
     
@@ -51,18 +50,17 @@ final class MughalPublishPluginTests: XCTestCase {
     }
     
     private func rewrites(using maxDimensions: [Int]) -> [ImageRewrite] {
-        MughalPublishPlugin.rewrites(
-            from: resourcesFolderPath.appendingComponent("img"),
-            to: Path("img-optimized"),
-            for: maxDimensions.map {
-                    ImageConfiguration(
-                        url: URL(fileURLWithPath: #file).appendingPathComponent("img/background.jpg"),
-                        extension: .jpg,
-                        targetExtension: .webp,
-                        targetSizes: [.init(fileName: "background-\(sizeClassFrom(upper: $0).fileSuffix)", dimensionsUpperBound: $0)]
-                    )
-                }
-        )
+        maxDimensions.flatMap {
+            ResponsivePublishPlugin.rewrites(
+                from: resourcesFolderPath.appendingComponent("img"),
+                to: Path("img-optimized"),
+                for: ImageConfiguration(
+                    url: URL(fileURLWithPath: #file).appendingPathComponent("img/background.jpg"),
+                    targetExtension: .webp,
+                    targetSizes: [sizeClassFrom(upper: $0)]
+                )!
+            )
+        }
     }
     
     
@@ -147,26 +145,38 @@ final class MughalPublishPluginTests: XCTestCase {
     
     func testCamelCaseIsChangedToKebap() {
         XCTAssertEqual(
-            MughalPublishPlugin.SizeClass.extraSmall.fileSuffix,
+            ResponsivePublishPlugin.SizeClass.extraSmall.fileSuffix,
             "extra-small"
         )
     }
     
     func testImageTagsAreRewritten() throws {
-        let staticPages: [Page] = [
-            Page(
-                path: Path("Home"),
-                content: Content(
-                    title: "Page - Home",
-                    description: "Description of page",
-                    body: Content.Body(
-                        node: .div(
-                            .img(.src(""))
-                        )
-                    ),
-                    lastModified: Date()
+        try TestWebsite().publish(
+            at: Self.testDirPath,
+            using: [
+                .copyResources(),
+                .installPlugin(
+                    .generateOptimizedImages(
+                        from: resourcesFolderPath.appendingComponent("img"),
+                        at: Path("img-optimized"),
+                        rewriting: Path("css/styles.css")
+                    )
                 )
-            )
-        ]
+            ]
+        )
+        
+        let output = try? outputFolder?
+            .file(at: "index.html")
+            .readAsString()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { !" \n\t\r".contains($0) }
+        
+        let expected = try? expectedFolder?
+            .file(named: "index-expected.html")
+            .readAsString()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { !" \n\t\r".contains($0) }
+        
+        XCTAssertEqual(output, expected)
     }
 }

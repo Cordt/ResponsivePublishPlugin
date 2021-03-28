@@ -1,6 +1,6 @@
 //
 //  RewriteEngineTests.swift
-//  MughalPublishPlugin
+//  ResponsivePublishPlugin
 //
 //  Created by Cordt Zermin on 20.03.21.
 //
@@ -9,7 +9,7 @@ import XCTest
 import Publish
 import Files
 
-@testable import MughalPublishPlugin
+@testable import ResponsivePublishPlugin
 
 final class ParserTests: XCTestCase {
     
