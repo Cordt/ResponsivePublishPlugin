@@ -9,7 +9,7 @@ import Foundation
 import Publish
 import SwiftGD
 
-fileprivate let imageTagPattern: String = #"<img\s*(?:src\s*\=\s*[\'\"]((\.\.\/|[A-Za-z-_\+\d]+\/)*)([A-Za-z-_\+\d]*).(jpg|png)[\'\"].*?\s*|[a-z]+?\s*\=\s*[\'\"].*?[\'\"].*?\s*)+[\s\/]*?>"#
+fileprivate let imageTagPattern: String = #"<img\s*(?:src\s*\=\s*[\'\"](\/?(\.\.\/|[A-Za-z-_\+\d]+\/)*)([A-Za-z-_\+\d]*).(jpg|png)[\'\"].*?\s*|[a-z]+?\s*\=\s*[\'\"].*?[\'\"].*?\s*)+[\s\/]*?>"#
 fileprivate let imagePathPattern: String = #"url\(['"]?((\.\.\/|[A-Za-z-_\+\d]+\/)*)([A-Za-z-_\+\d]*).(jpg|png){1}['"]?\);"#
 
 /// Extracts Image URLs from a given HTML file, looking for img-tags and the corresponding src-attribute
