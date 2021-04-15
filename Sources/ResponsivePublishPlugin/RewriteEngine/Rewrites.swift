@@ -40,6 +40,10 @@ func rewrite(stylesheet: String, with rewrites: [ImageRewrite]) -> String {
     let urls = imageUrlsFrom(stylesheet: stylesheet)
     let specificRewrites = fileSpecificRewrites(for: rewrites, and: urls)
     
+    guard !specificRewrites.isEmpty else {
+        return stylesheet
+    }
+    
     // Create css-variable declarations for the different size classes
     var declaration: String = ""
     var indentation: String = ""
