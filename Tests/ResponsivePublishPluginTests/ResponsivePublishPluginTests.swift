@@ -49,11 +49,11 @@ final class ResponsivePublishPluginTests: XCTestCase {
         Path("Resources")
     }
     
-    private func rewrites(using maxDimensions: [Int]) -> [ImageRewrite] {
+    private func rewrites(using maxDimensions: [Int], targetPath: Path) -> [ImageRewrite] {
         maxDimensions.flatMap {
             ResponsivePublishPlugin.rewrites(
                 from: resourcesFolderPath.appendingComponent("img"),
-                to: Path("img-optimized"),
+                to: targetPath,
                 for: ImageConfiguration(
                     url: URL(fileURLWithPath: #file).appendingPathComponent("img/background.jpg"),
                     targetExtension: .webp,
@@ -113,64 +113,51 @@ final class ResponsivePublishPluginTests: XCTestCase {
         XCTAssertEqual(output, expected)
     }
     
-    func testCssIsntTouchedWhenThereAreNoSpecificRewrites() throws {
-        try TestWebsite().publish(
-            at: Self.testDirPath,
-            using: [
-                .copyResources(),
-                .installPlugin(
-                    .generateOptimizedImages(
-                        from: resourcesFolderPath.appendingComponent("img"),
-                        at: Path("img-optimized"),
-                        rewriting: Path("css/styles-no-rewrite.css")
-                    )
-                )
-            ]
-        )
+    func testRewritesProduceCorrectPaths() {
         
-        let output = try? outputFolder?
-            .file(at: "css/styles-no-rewrite.css")
-            .readAsString()
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .filter { !" \n\t\r".contains($0) }
+        let target: Path = Path("img-optimized")
         
-        let expected = try? expectedFolder?
-            .file(named: "styles-expected-no-rewrite.css")
-            .readAsString()
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .filter { !" \n\t\r".contains($0) }
-        
-        XCTAssertEqual(output, expected)
-    }
-    
-    func testRewritesProduceCorrectPathes() {
         // Different sizes produce different target file names
         var expectation: [ImageRewrite] = [
             .init(
                 source: .init(path: Path("Resources/img"), fileName: "background", extension: .jpg),
-                target: .init(path: Path("img-optimized"), fileName: "background-normal", extension: .webp),
+                target: .init(path: target, fileName: "background-normal", extension: .webp),
                 targetSizeClass: .normal
             )
         ]
-        XCTAssertEqual(self.rewrites(using: [1200]), expectation)
-        print(self.rewrites(using: [1200]))
-        expectation = [
-            .init(
-                source: .init(path: Path("Resources/img"), fileName: "background", extension: .jpg),
-                target: .init(path: Path("img-optimized"), fileName: "background-extra-small", extension: .webp),
-                targetSizeClass: .extraSmall
-            )
-        ]
-        XCTAssertEqual(self.rewrites(using: [600]), expectation)
+        XCTAssertEqual(self.rewrites(using: [1200], targetPath: target), expectation)
         
         expectation = [
             .init(
+                source: .init(path: Path("Resources/img"), fileName: "background", extension: .jpg),
+                target: .init(path: target, fileName: "background-extra-small", extension: .webp),
+                targetSizeClass: .extraSmall
+            )
+        ]
+        XCTAssertEqual(self.rewrites(using: [600], targetPath: target), expectation)
+    }
+    
+    func testRewritesKeepCorrectPrefix() {
+        
+        let targetPath = Path("img-optimized")
+        var expectation: [ImageRewrite] = [
+            .init(
                 source: .init(path: Path("Resources/img/"), fileName: "background", extension: .jpg),
-                target: .init(path: Path("/img-optimized"), fileName: "background-normal", extension: .webp),
+                target: .init(path: targetPath, fileName: "background-normal", extension: .webp),
                 targetSizeClass: .normal
             )
         ]
-        XCTAssertEqual(self.rewrites(using: [1200]), expectation)
+        XCTAssertEqual(self.rewrites(using: [1200], targetPath: targetPath), expectation)
+        
+        let targetPathWithPrefix = Path("/img-optimized")
+        expectation = [
+            .init(
+                source: .init(path: Path("Resources/img/"), fileName: "background", extension: .jpg),
+                target: .init(path: targetPathWithPrefix, fileName: "background-normal", extension: .webp),
+                targetSizeClass: .normal
+            )
+        ]
+        XCTAssertEqual(self.rewrites(using: [1200], targetPath: targetPathWithPrefix), expectation)
     }
     
     func testCamelCaseIsChangedToKebap() {
