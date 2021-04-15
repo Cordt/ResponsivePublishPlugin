@@ -113,6 +113,36 @@ final class ResponsivePublishPluginTests: XCTestCase {
         XCTAssertEqual(output, expected)
     }
     
+    func testCssIsntTouchedWhenThereAreNoSpecificRewrites() throws {
+        try TestWebsite().publish(
+            at: Self.testDirPath,
+            using: [
+                .copyResources(),
+                .installPlugin(
+                    .generateOptimizedImages(
+                        from: resourcesFolderPath.appendingComponent("img"),
+                        at: Path("img-optimized"),
+                        rewriting: Path("css/styles-no-rewrite.css")
+                    )
+                )
+            ]
+        )
+        
+        let output = try? outputFolder?
+            .file(at: "css/styles-no-rewrite.css")
+            .readAsString()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { !" \n\t\r".contains($0) }
+        
+        let expected = try? expectedFolder?
+            .file(named: "styles-expected-no-rewrite.css")
+            .readAsString()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { !" \n\t\r".contains($0) }
+        
+        XCTAssertEqual(output, expected)
+    }
+    
     func testRewritesProduceCorrectPathes() {
         // Different sizes produce different target file names
         var expectation: [ImageRewrite] = [
