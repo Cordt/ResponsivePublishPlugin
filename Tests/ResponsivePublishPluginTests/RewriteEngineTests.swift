@@ -175,6 +175,32 @@ final class ParserTests: XCTestCase {
     
     // MARK: - Tests
     
+    func testContainedRelativePathsAreFound() {
+        var prefixedPath = ImageRewrite.ImageUrl(path: "img/detail", fileName: "background", extension: .jpg)
+        var path = ImageRewrite.ImageUrl(path: "detail", fileName: "background", extension: .jpg)
+        var result = prefixedPath.contains(other: path)
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result, Path("img/"))
+        
+        prefixedPath = ImageRewrite.ImageUrl(path: "assets/img/detail", fileName: "background", extension: .jpg)
+        path = ImageRewrite.ImageUrl(path: "img/detail", fileName: "background", extension: .jpg)
+        result = prefixedPath.contains(other: path)
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result, Path("assets/"))
+        
+        prefixedPath = ImageRewrite.ImageUrl(path: "img/detail/", fileName: "background", extension: .jpg)
+        path = ImageRewrite.ImageUrl(path: "detail", fileName: "background", extension: .jpg)
+        result = prefixedPath.contains(other: path)
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result, Path("img/"))
+        
+        prefixedPath = ImageRewrite.ImageUrl(path: "/img/detail", fileName: "background", extension: .jpg)
+        path = ImageRewrite.ImageUrl(path: "detail", fileName: "background", extension: .jpg)
+        result = prefixedPath.contains(other: path)
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result, Path("/img/"))
+    }
+    
     func testImagePathsAreFound() throws {
         let imagePaths = imageUrlsFrom(stylesheet: css)
         XCTAssertEqual(imagePaths, expectedImagePaths)

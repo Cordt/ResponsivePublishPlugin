@@ -40,7 +40,7 @@ extension Plugin {
             // Generate WebP images from all images in all responsive sizes
             env.generateImages(configs)
                 .run { images.append(contentsOf: $0) }
-            
+
             // Save generated images to the optimized images destination path
             do {
                 let outputFolder = try context.createOutputFolder(at: at)

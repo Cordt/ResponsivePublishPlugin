@@ -119,6 +119,7 @@ func rewrite(html: String, with rewrites: [ImageRewrite]) -> String {
                 $0 + "\($1.target.filePath) \($1.targetSizeClass.upperBound)w, "
             }
             .dropLast(2)
+            
             return ImageTagAttribute(
                 originalSource: source,
                 sourceSet: "srcset=\"\(srcset)\""

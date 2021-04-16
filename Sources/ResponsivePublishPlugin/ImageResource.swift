@@ -94,10 +94,7 @@ struct ImageRewrite: Equatable {
             fileName: String,
             `extension`: ImageFormat
         ) {
-            var pathString = path.absoluteString
-            if !path.string.hasPrefix("/") {
-                pathString = String(pathString.drop(while: { $0 == "/" }))
-            }
+            var pathString = path.string
             pathString = String(pathString.dropLast(pathString.last == "/" ? 1 : 0))
             self.path = Path("\(pathString)")
             self.fileName = fileName
@@ -112,21 +109,15 @@ struct ImageRewrite: Equatable {
                   self.path.string.count >= other.path.string.count
             else { return nil }
             
-            let path1 = self.path.absoluteString
-            let path2 = other.path.absoluteString
+            let path1 = self.path.string
+            let path2 = other.path.string
             
             let prefixedPath = String(path1.reversed())
             let containedPath = String(path2.reversed())
             
             guard path1.count != path2.count else { return Path("") }
-            var pathPrefix = path1.count > path2.count ? path1: path2
-            pathPrefix
-                .removeLast(containedPath.commonPrefix(with: prefixedPath).count)
-            if !self.path.string.hasPrefix("/") {
-                pathPrefix
-                    .removeFirst()
-            }
-            pathPrefix += "/"
+            var pathPrefix = path1.count > path2.count ? path1 : path2
+            pathPrefix.removeLast(containedPath.commonPrefix(with: prefixedPath).count)
             
             return Path(pathPrefix)
         }
