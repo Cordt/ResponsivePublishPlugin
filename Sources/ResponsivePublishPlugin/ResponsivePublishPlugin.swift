@@ -18,12 +18,14 @@ extension Plugin {
     public static func generateOptimizedImages(
         from: Path = Path("Resources/assets/img"),
         at: Path = Path("assets/img-optimized"),
-        rewriting stylesheet: Path = Path("assets/css/styles.css")) -> Self
+        rewriting stylesheet: Path = Path("assets/css/styles.css"),
+        excluding: [String] = []) -> Self
     {
         Plugin(name: "Responsive") { context in
             let urls: [URL] = try context
                 .folder(at: from)
                 .files
+                .filter({ !excluding.contains($0.name) })
                 .reduce([URL]()) { current, file in
                     current + [URL(fileURLWithPath: file.path)]
                 }

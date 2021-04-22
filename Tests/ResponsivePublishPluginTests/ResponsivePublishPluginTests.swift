@@ -197,6 +197,38 @@ final class ResponsivePublishPluginTests: XCTestCase {
         XCTAssertEqual(output, expected)
     }
     
+    func testImageExclusion() throws {
+        try TestWebsite().publish(
+            at: Self.testDirPath,
+            using: [
+                .copyResources(),
+                .installPlugin(
+                    .generateOptimizedImages(
+                        from: resourcesFolderPath.appendingComponent("img"),
+                        at: Path("img-optimized"),
+                        rewriting: Path("css/styles.css"),
+                        excluding: ["background-exclude.jpg"]
+                    )
+                )
+            ]
+        )
+        
+        let output = try? outputFolder?
+            .file(at: "index-with-exclusion.html")
+            .readAsString()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { !" \n\t\r".contains($0) }
+        
+        let expected = """
+        <img srcset="assets/img-optimized/background-extra-small.webp 600w, assets/img-optimized/background-small.webp 900w, assets/img-optimized/background-normal.webp 1200w, assets/img-optimized/background-large.webp 1800w" src="assets/img/background.jpg" />
+        <img src="assets/img/background-exclude.jpg" />
+        """
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { !" \n\t\r".contains($0) }
+        
+        XCTAssertEqual(output, expected)
+    }
+    
     func testImagesForSizeClassesAreCreated() throws {
         try TestWebsite().publish(
             at: Self.testDirPath,
