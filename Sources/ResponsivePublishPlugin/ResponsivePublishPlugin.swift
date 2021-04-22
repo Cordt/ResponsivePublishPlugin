@@ -18,17 +18,16 @@ extension Plugin {
     public static func generateOptimizedImages(
         from: Path = Path("Resources/assets/img"),
         at: Path = Path("assets/img-optimized"),
-        rewriting stylesheet: Path = Path("assets/css/styles.css")) -> Self
+        rewriting stylesheet: Path = Path("assets/css/styles.css"),
+        excludedSubfolders: [String] = [],
+        excludedFiles: [String] = []) -> Self
     {
         Plugin(name: "Responsive") { context in
-            let urls: [URL] = try context
-                .folder(at: from)
-                .files
-                .reduce([URL]()) { current, file in
-                    current + [URL(fileURLWithPath: file.path)]
-                }
             
-            let configs: [ImageConfiguration] = urls.compactMap { url in
+            let imageFiles = try files(at: context.folder(at: from), excludingSubfolders: excludedSubfolders, excludingFiles: excludedFiles)
+            let imageUrls: [URL] = urls(from: imageFiles)
+            
+            let configs: [ImageConfiguration] = imageUrls.compactMap { url in
                 return ImageConfiguration(
                     url: url,
                     targetExtension: .webp,

@@ -49,20 +49,6 @@ final class ResponsivePublishPluginTests: XCTestCase {
         Path("Resources")
     }
     
-    private func rewrites(using maxDimensions: [Int], targetPath: Path) -> [ImageRewrite] {
-        maxDimensions.flatMap {
-            ResponsivePublishPlugin.rewrites(
-                from: resourcesFolderPath.appendingComponent("img"),
-                to: targetPath,
-                for: ImageConfiguration(
-                    url: URL(fileURLWithPath: #file).appendingPathComponent("img/background.jpg"),
-                    targetExtension: .webp,
-                    targetSizes: [sizeClassFrom(upper: $0)]
-                )!
-            )
-        }
-    }
-    
     
     // MARK: - Lifecycle
     
@@ -111,60 +97,6 @@ final class ResponsivePublishPluginTests: XCTestCase {
             .filter { !" \n\t\r".contains($0) }
         
         XCTAssertEqual(output, expected)
-    }
-    
-    func testRewritesProduceCorrectPaths() {
-        
-        let target: Path = Path("img-optimized")
-        
-        // Different sizes produce different target file names
-        var expectation: [ImageRewrite] = [
-            .init(
-                source: .init(path: Path("Resources/img"), fileName: "background", extension: .jpg),
-                target: .init(path: target, fileName: "background-normal", extension: .webp),
-                targetSizeClass: .normal
-            )
-        ]
-        XCTAssertEqual(self.rewrites(using: [1200], targetPath: target), expectation)
-        
-        expectation = [
-            .init(
-                source: .init(path: Path("Resources/img"), fileName: "background", extension: .jpg),
-                target: .init(path: target, fileName: "background-extra-small", extension: .webp),
-                targetSizeClass: .extraSmall
-            )
-        ]
-        XCTAssertEqual(self.rewrites(using: [600], targetPath: target), expectation)
-    }
-    
-    func testRewritesKeepCorrectPrefix() {
-        
-        let targetPath = Path("img-optimized")
-        var expectation: [ImageRewrite] = [
-            .init(
-                source: .init(path: Path("Resources/img/"), fileName: "background", extension: .jpg),
-                target: .init(path: targetPath, fileName: "background-normal", extension: .webp),
-                targetSizeClass: .normal
-            )
-        ]
-        XCTAssertEqual(self.rewrites(using: [1200], targetPath: targetPath), expectation)
-        
-        let targetPathWithPrefix = Path("/img-optimized")
-        expectation = [
-            .init(
-                source: .init(path: Path("Resources/img/"), fileName: "background", extension: .jpg),
-                target: .init(path: targetPathWithPrefix, fileName: "background-normal", extension: .webp),
-                targetSizeClass: .normal
-            )
-        ]
-        XCTAssertEqual(self.rewrites(using: [1200], targetPath: targetPathWithPrefix), expectation)
-    }
-    
-    func testCamelCaseIsChangedToKebap() {
-        XCTAssertEqual(
-            ResponsivePublishPlugin.SizeClass.extraSmall.fileSuffix,
-            "extra-small"
-        )
     }
     
     func testImageTagsAreRewritten() throws {
@@ -218,7 +150,12 @@ final class ResponsivePublishPluginTests: XCTestCase {
             .names()
             .sorted()
         
-        XCTAssertEqual(output?.count, 4)
-        XCTAssertEqual(output, ["background-extra-small.webp", "background-large.webp", "background-normal.webp", "background-small.webp"])
+        XCTAssertEqual(output?.count, 8)
+        XCTAssertEqual(
+            output, [
+                "background-extra-small.webp", "background-large.webp", "background-normal.webp", "background-small.webp",
+                "sub-background-extra-small.webp", "sub-background-large.webp", "sub-background-normal.webp", "sub-background-small.webp"
+            ]
+        )
     }
 }
