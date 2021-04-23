@@ -25,15 +25,8 @@ extension Plugin {
         Plugin(name: "Responsive") { context in
             
             let imageFiles = try files(at: context.folder(at: from), excludingSubfolders: excludedSubfolders, excludingFiles: excludedFiles)
-            let imageUrls: [URL] = urls(from: imageFiles)
+            let configs: [ImageConfiguration] = configurations(from: imageFiles, at: from)
             
-            let configs: [ImageConfiguration] = imageUrls.compactMap { url in
-                return ImageConfiguration(
-                    url: url,
-                    targetExtension: .webp,
-                    targetSizes: SizeClass.allCases
-                )
-            }
             var images = [ExportableImage]()
             
             // Generate WebP images from all images in all responsive sizes
@@ -42,8 +35,8 @@ extension Plugin {
 
             // Save generated images to the optimized images destination path
             do {
-                let outputFolder = try context.createOutputFolder(at: at)
                 try images.forEach {
+                    let outputFolder = try context.createOutputFolder(at: at.appendingComponent($0.relativeOutputFolderPath.string))
                     try outputFolder.createFile(at: $0.fullFileName, contents: $0.image.export(as: .webp))
                 }
             }

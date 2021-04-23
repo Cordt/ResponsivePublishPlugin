@@ -11,7 +11,7 @@ import Files
 
 @testable import ResponsivePublishPlugin
 
-final class ParserTests: XCTestCase {
+final class RewriteEngineTests: XCTestCase {
     
     
     // MARK: - Properties
@@ -183,6 +183,7 @@ final class ParserTests: XCTestCase {
                 to: targetPath,
                 for: ImageConfiguration(
                     url: URL(fileURLWithPath: #file).appendingPathComponent("img/background.jpg"),
+                    resourcesLocation: Path("Resources/img"),
                     targetExtension: .webp,
                     targetSizes: [sizeClassFrom(upper: $0)]
                 )!

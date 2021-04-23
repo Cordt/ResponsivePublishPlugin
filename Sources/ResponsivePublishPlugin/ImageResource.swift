@@ -47,10 +47,11 @@ struct ImageConfiguration {
     let url: URL
     let fileName: String
     let `extension`: ImageFormat
+    let relativePath: Path
     let targetExtension: ImageFormat
     let targetSizes: [SizeClass]
     
-    init?(url: URL, targetExtension: ImageFormat, targetSizes: [SizeClass]) {
+    init?(url: URL, resourcesLocation: Path, targetExtension: ImageFormat, targetSizes: [SizeClass]) {
         let lastComponents = url.lastPathComponent.split(separator: ".")
         guard let fileName = lastComponents.first.map(String.init),
               let `extension` = lastComponents.last.map(String.init),
@@ -60,6 +61,7 @@ struct ImageConfiguration {
         self.url = url
         self.fileName = fileName
         self.extension = importableFormat
+        self.relativePath = relativeSourcePath(in: url.absoluteString, for: resourcesLocation.string, and: "\(fileName).\(`extension`)")
         self.targetExtension = targetExtension
         self.targetSizes = targetSizes
     }
@@ -71,6 +73,7 @@ struct ImageConfiguration {
 
 struct ExportableImage {
     /// Name of the file (w/o file extension)
+    let relativeOutputFolderPath: Path
     let name: String
     let `extension`: ImageFormat
     let image: Image
@@ -136,8 +139,8 @@ struct ImageRewrite: Equatable {
 func rewrites(from source: Path, to target: Path, for config: ImageConfiguration) -> [ImageRewrite] {
     config.targetSizes.map { size in
         ImageRewrite(
-            source: .init(path: source, fileName: config.fileName, extension: config.extension),
-            target: .init(path: target, fileName: config.fileName(for: size), extension: config.targetExtension),
+            source: .init(path: source.appendingComponent(config.relativePath.string), fileName: config.fileName, extension: config.extension),
+            target: .init(path: target.appendingComponent(config.relativePath.string), fileName: config.fileName(for: size), extension: config.targetExtension),
             targetSizeClass: size
         )
     }
@@ -246,4 +249,31 @@ func sizeThatFits(for original: Size, within upperBound: Int) -> Size {
         width: Int(Float(original.width) * factor),
         height: Int(Float(original.height) * factor)
     )
+}
+
+
+/// Extracts the path of the file, relative to the base path in the project
+///
+/// For example
+/// Base path of the images: `Resources/assets/img`
+/// Path of this image: `Resources/assets/img/subfolder/sub-background.jpg`
+/// Function will return: `subfolder/`
+///
+func relativeSourcePath(in urlPath: String, for location: String, and fileName: String) -> Path {
+    let pattern = ".*\(location)(.*)\(fileName)$"
+    do {
+        let regex = try NSRegularExpression(pattern: pattern, options: [])
+        let stringRange = NSRange(location: 0, length: urlPath.utf16.count)
+        let matches = regex.matches(in: urlPath, range: stringRange)
+        guard let match = matches.first, match.numberOfRanges == 2
+        else { return Path("") }
+        
+        let range = match.range(at: 1)
+        let path = (urlPath as NSString).substring(with: range)
+        return Path(String(path.dropLast(path.last == "/" ? 1 : 0)))
+        
+    } catch let error {
+        print(error)
+        return Path("")
+    }
 }

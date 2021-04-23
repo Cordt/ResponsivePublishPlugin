@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Publish
 import Files
 
 func files(at folder: Folder,
@@ -26,5 +27,16 @@ func files(at folder: Folder,
 func urls(from files: [File]) -> [URL] {
     files.reduce([URL]()) { current, file in
         current + [URL(fileURLWithPath: file.path)]
+    }
+}
+
+func configurations(from files: [File], at resourcesLocation: Path) -> [ImageConfiguration] {
+    files.compactMap { file in
+        return ImageConfiguration(
+            url: file.url,
+            resourcesLocation: resourcesLocation,
+            targetExtension: .webp,
+            targetSizes: SizeClass.allCases
+        )
     }
 }

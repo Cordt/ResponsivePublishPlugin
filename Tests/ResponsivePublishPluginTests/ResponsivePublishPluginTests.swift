@@ -150,10 +150,21 @@ final class ResponsivePublishPluginTests: XCTestCase {
             .names()
             .sorted()
         
-        XCTAssertEqual(output?.count, 8)
+        let subFolderOutput = try? outputFolder?
+            .subfolder(at: "img-optimized/subfolder")
+            .files
+            .names()
+            .sorted()
+        
+        XCTAssertEqual(output?.count, 4)
         XCTAssertEqual(
             output, [
-                "background-extra-small.webp", "background-large.webp", "background-normal.webp", "background-small.webp",
+                "background-extra-small.webp", "background-large.webp", "background-normal.webp", "background-small.webp"
+            ]
+        )
+        XCTAssertEqual(subFolderOutput?.count, 4)
+        XCTAssertEqual(
+            subFolderOutput, [
                 "sub-background-extra-small.webp", "sub-background-large.webp", "sub-background-normal.webp", "sub-background-small.webp"
             ]
         )

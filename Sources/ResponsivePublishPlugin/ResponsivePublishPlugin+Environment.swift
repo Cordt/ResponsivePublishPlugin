@@ -13,7 +13,7 @@ struct Environment {
     
     static func live() -> Self {
         Environment(
-            generateImages: reducedImaged(for:)
+            generateImages: reducedImages(for:)
         )
     }
     
@@ -25,6 +25,7 @@ struct Environment {
                     current + config.targetSizes.compactMap { sizeClass in
                         guard let image = Image(width: sizeClass.upperBound / 2, height: sizeClass.upperBound) else { return nil }
                         return ExportableImage(
+                            relativeOutputFolderPath: config.relativePath,
                             name: config.fileName(for: sizeClass),
                             extension: .webp,
                             image: image
@@ -38,7 +39,7 @@ struct Environment {
     #endif
 }
 
-fileprivate func reducedImaged(for configurations: [ImageConfiguration]) -> Parallel<[ExportableImage]> {
+fileprivate func reducedImages(for configurations: [ImageConfiguration]) -> Parallel<[ExportableImage]> {
     Parallel<[ExportableImage]> { callback in
         let images = configurations.reduce([ExportableImage]()) { current, config in
             current + config.targetSizes.compactMap { sizeClass -> ExportableImage? in
@@ -46,6 +47,7 @@ fileprivate func reducedImaged(for configurations: [ImageConfiguration]) -> Para
                 let targetSize = sizeThatFits(for: image.size, within: sizeClass.upperBound)
                 guard let resizedImage = image.resizedTo(width: targetSize.width, height: targetSize.height) else { return nil }
                 return ExportableImage(
+                    relativeOutputFolderPath: config.relativePath,
                     name: config.fileName(for: sizeClass),
                     extension: config.targetExtension,
                     image: resizedImage
