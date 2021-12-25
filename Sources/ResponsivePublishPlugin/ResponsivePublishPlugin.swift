@@ -18,7 +18,7 @@ extension Plugin {
     public static func generateOptimizedImages(
         from: Path = Path("Resources/assets/img"),
         at: Path = Path("assets/img-optimized"),
-        rewriting stylesheet: Path = Path("assets/css/styles.css"),
+        rewriting stylesheets: [Path] = [Path("assets/css/styles.css")],
         excludedSubfolders: [String] = [],
         excludedFiles: [String] = []) -> Self
     {
@@ -48,10 +48,12 @@ extension Plugin {
             
             // Rewrite output css file with optimized images
             do {
-                let cssFile = try context.outputFile(at: stylesheet)
-                var css = try cssFile.readAsString()
-                css = rewrite(stylesheet: css, with: imageRewrites)
-                try cssFile.write(css)
+                for stylesheet in stylesheets {
+                    let cssFile = try context.outputFile(at: stylesheet)
+                    var css = try cssFile.readAsString()
+                    css = rewrite(stylesheet: css, with: imageRewrites)
+                    try cssFile.write(css)
+                }
             }
             catch let error {
                 print("Failed to rewrite CSS files with error: \(error)")

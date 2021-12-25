@@ -78,7 +78,7 @@ final class ResponsivePublishPluginTests: XCTestCase {
                     .generateOptimizedImages(
                         from: resourcesFolderPath.appendingComponent("img"),
                         at: Path("img-optimized"),
-                        rewriting: Path("css/styles.css")
+                        rewriting: [Path("css/styles.css")]
                     )
                 )
             ]
@@ -108,7 +108,7 @@ final class ResponsivePublishPluginTests: XCTestCase {
                     .generateOptimizedImages(
                         from: resourcesFolderPath.appendingComponent("img"),
                         at: Path("img-optimized"),
-                        rewriting: Path("css/styles.css")
+                        rewriting: [Path("css/styles.css")]
                     )
                 )
             ]
@@ -138,7 +138,7 @@ final class ResponsivePublishPluginTests: XCTestCase {
                     .generateOptimizedImages(
                         from: resourcesFolderPath.appendingComponent("img"),
                         at: Path("img-optimized"),
-                        rewriting: Path("css/styles.css")
+                        rewriting: [Path("css/styles.css")]
                     )
                 )
             ]
