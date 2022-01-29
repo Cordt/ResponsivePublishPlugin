@@ -120,14 +120,48 @@ struct ImageRewrite: Equatable {
             
             guard path1.count != path2.count else { return Path("") }
             var pathPrefix = path1.count > path2.count ? path1 : path2
-            pathPrefix.removeLast(containedPath.commonPrefix(with: prefixedPath).count)
+            let commonPathLength = containedPath.commonPrefix(with: prefixedPath).count
+            pathPrefix.removeLast(commonPathLength)
             
             return Path(pathPrefix)
+        }
+        
+        /// Counts the number of parent directory hops, before going into the directory structure
+        /// That is, the function counts the number of '../'
+        func noOfParentDirectories() -> Int {
+            var counter = 0
+            var path = self.filePath
+            while path.count > 3 && path.dropLast(path.count - 3) == "../" {
+                counter += 1
+                path = String(path.dropFirst(3))
+            }
+            return counter
+        }
+
+        /// Removes one directory from the beginning of the path for each number of hops indicated
+        /// Adds one parent directory hop at the beginning ('../') instead
+        func preprendingParentDirectories(number: Int) -> Path {
+            guard number > 0 else { return self.path }
+            
+            var path = self.path.absoluteString
+            if !path.contains("/") { return Path("..") }
+            if path.first == "/" { path.removeFirst() }
+            for _ in 1 ... number {
+                // Need to check this again, in case the path has a leading slash, but not a trailing one
+                if !path.contains("/") { return Path("..") }
+                path = String(path.drop { $0 != "/" })
+                path.removeFirst()
+            }
+            for _ in 1 ... number {
+                path = "../" + path
+            }
+            return Path(path)
         }
     }
     
     var source: ImageUrl
     var target: ImageUrl
+    
     var targetSizeClass: SizeClass
     var variableNameSuffix: String? = nil
     
