@@ -249,25 +249,6 @@ extension String {
     }
 }
 
-/// Type that encapsulates  asynchronus calls to allow passing them as 'simple' types
-///
-/// For example, instead of using completion handlers in functions that contain async code,
-/// the function can simply return a Parallel
-public struct Parallel<A> {
-    public let run: (@escaping (A) -> Void) -> Void
-    
-    public init(run: @escaping (@escaping (A) -> Void) -> Void) {
-        self.run = run
-    }
-
-    public func map<B>(_ f: @escaping (A) -> B) -> Parallel<B> {
-        return Parallel<B> { callback in
-            self.run { a in
-                callback(f(a))
-            }
-        }
-    }
-}
 
 /// Calculates Image dimensions within a given upper bound
 ///
