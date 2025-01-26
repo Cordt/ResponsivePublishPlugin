@@ -10,7 +10,6 @@ func resizedImages<Site: Website>(
   return configurations.reduce([ExportableImage]()) { current, config in
     // Check which images have already been generated
     if let exportableImages = loadImagesFromCache(config: config, in: context) {
-      print("Found cached images for \(config.fileName)")
       return current + exportableImages
     }
     else {

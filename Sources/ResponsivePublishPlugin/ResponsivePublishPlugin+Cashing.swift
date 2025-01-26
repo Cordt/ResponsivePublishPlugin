@@ -82,6 +82,9 @@ fileprivate func loadImageCache<Site: Website>(context: PublishingContext<Site>)
   do {
     let cacheFile = try createCacheFileIfNeeded(in: context)
     let data = try cacheFile.read()
+    guard !data.isEmpty else {
+      return [:]
+    }
     let dict = try JSONDecoder().decode([String: String].self, from: data)
     return dict
   }
