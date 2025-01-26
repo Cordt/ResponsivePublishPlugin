@@ -15,13 +15,13 @@ func loadImagesFromCache<Site: Website>(
 ) -> [ExportableImage]? {
   do {
     let cache = loadImageCache(context: context)
-    let imageData = try Data(contentsOf: config.url)
     
     var result: [ExportableImage] = []
     for size in config.targetSizes {
       guard
         let sizeClassData = size.fileSuffix.data(using: .utf8),
-        let existingPath = cache[hashImageData(imageData + sizeClassData)],
+        let imageHash = imageHash(config.url, sizeClassData: sizeClassData),
+        let existingPath = cache[imageHash],
         let imageData = getImageDataFromCache(existingPath, in: context)
       else { return nil }
       
@@ -52,14 +52,18 @@ func saveImageInCache<Site: Website>(
 ) {
   do {
     var cache = loadImageCache(context: context)
-    let originalImageData = try Data(contentsOf: originalImageUrl)
     let imageData = try image.image.export(as: .webp)
     let sizeClassData = sizeClass.fileSuffix.data(using: .utf8)!
     let fileName = "\(UUID().uuidString).\(image.extension.rawValue)"
     
-    cache[hashImageData(originalImageData + sizeClassData)] = fileName
-    try saveImageInCache(fileName, image: imageData, in: context)
-    saveCacheToDisk(cache, in: context)
+    if let imageHash = imageHash(originalImageUrl, sizeClassData: sizeClassData) {
+      cache[imageHash] = fileName
+      try saveImageInCache(fileName, image: imageData, in: context)
+      saveCacheToDisk(cache, in: context)
+    }
+    else {
+      print("Failed to generate partial hash from Image")
+    }
   }
   catch {
     print("Failed to save Image in Cache: \(error)")
@@ -70,9 +74,41 @@ func saveImageInCache<Site: Website>(
 // MARK: - Hashing
 
 /// Generates a SHA-256 hash string from raw image data.
-fileprivate func hashImageData(_ data: Data) -> String {
-  let hash = SHA256.hash(data: data)
-  return hash.map { String(format: "%02x", $0) }.joined()
+fileprivate func imageHash(_ url: URL, sizeClassData: Data, chunkSize: Int = 64 * 1024) -> String? {
+  guard let fileHandle = try? FileHandle(forReadingFrom: url)
+  else { return nil }
+  defer { try? fileHandle.close() }
+  
+  guard let fileSize = try? fileHandle.seekToEnd(), fileSize > 0
+  else { return nil }
+  
+  // Seek back to start to read the first chunk
+  try? fileHandle.seek(toOffset: 0)
+  let firstChunk = fileHandle.readData(ofLength: min(chunkSize, Int(fileSize)))
+  
+  // Seek to the position where the last chunk begins
+  let lastChunkSize = min(chunkSize, Int(fileSize))
+  if fileSize > chunkSize {
+    // If there's enough data, read from fileSize - chunkSize
+    try? fileHandle.seek(toOffset: fileSize - UInt64(lastChunkSize))
+  }
+  else {
+    // If file is smaller than chunkSize, we've already read it all.
+    // We can just reuse `firstChunk`.
+  }
+  let lastChunk = (fileSize > chunkSize)
+  ? fileHandle.readData(ofLength: lastChunkSize)
+  : Data()
+  
+  // Combine them
+  var combined = Data()
+  combined.append(firstChunk)
+  combined.append(lastChunk)
+  combined.append(sizeClassData)
+  
+  // Hash using CryptoKit’s SHA256
+  let hashValue = SHA256.hash(data: combined)
+  return hashValue.compactMap { String(format: "%02x", $0) }.joined()
 }
 
 
