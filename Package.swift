@@ -11,7 +11,7 @@ let package = Package(
             targets: ["ResponsivePublishPlugin"]),
     ],
     dependencies: [
-        .package(name: "Publish", url: "https://github.com/johnsundell/publish.git", from: "0.9.0"),
+      .package(name: "Publish", url: "https://github.com/johnsundell/publish.git", "0.7.0"..."0.8.0"),
         .package(name: "SwiftGD", url: "https://github.com/twostraws/SwiftGD.git", from: "2.0.0"),
     ],
     targets: [
