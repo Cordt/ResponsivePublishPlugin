@@ -46,7 +46,7 @@ final class ResponsivePublishPluginTests: XCTestCase {
   }
   
   private var cacheFolder: Folder? {
-    try? Folder(path: Self.testDirPath.appendingComponent(".publish/Caches/ResponsivePluginImageCaches").absoluteString)
+    try? Folder(path: Self.testDirPath.appendingComponent(".plugins/Caches/ResponsivePluginImageCaches").absoluteString)
   }
   
   private var resourcesFolderPath: Path {
@@ -68,6 +68,7 @@ final class ResponsivePublishPluginTests: XCTestCase {
     
     try? outputFolder?.delete()
     try? Folder(path: Self.testDirPath.appendingComponent(".publish").absoluteString).delete()
+    try? Folder(path: Self.testDirPath.appendingComponent(".plugins").absoluteString).delete()
   }
   
   

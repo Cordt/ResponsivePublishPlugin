@@ -100,7 +100,7 @@ fileprivate func createCacheFileIfNeeded<Site: Website>(in context: PublishingCo
 }
 
 fileprivate func createCacheFolderIfNeeded<Site: Website>(in context: PublishingContext<Site>) throws -> Folder {
-  let cachesFolder = try context.folder(at: ".publish/Caches")
+  let cachesFolder = try context.createFolder(at: ".plugins/Caches")
   return try cachesFolder.createSubfolderIfNeeded(withName: "ResponsivePluginImageCaches")
 }
 
