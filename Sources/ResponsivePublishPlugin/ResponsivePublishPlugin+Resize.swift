@@ -13,15 +13,14 @@ func resizedImages<Site: Website>(
       return current + exportableImages
     }
     else {
-      return current + config.targetSizes.compactMap { sizeClass in
+      var imagesToCache: [SizeClass: ExportableImage] = [:]
+      config.targetSizes.forEach { sizeClass in
         if let exportableImage = env.resizeImage(config, sizeClass) {
-          saveImageInCache(sizeClass: sizeClass, originalImageUrl: config.url, image: exportableImage, in: context)
-          return exportableImage
-        }
-        else {
-          return nil
+          imagesToCache[sizeClass] = exportableImage
         }
       }
+      saveImagesInCache(imagesToCache: imagesToCache, originalImageUrl: config.url, in: context)
+      return current + imagesToCache.values
     }
   }
 }

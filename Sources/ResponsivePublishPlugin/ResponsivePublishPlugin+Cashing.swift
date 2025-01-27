@@ -46,27 +46,65 @@ func loadImagesFromCache<Site: Website>(
 
 func saveImageInCache<Site: Website>(
   sizeClass: SizeClass,
+  exportableImage: ExportableImage,
   originalImageUrl: URL,
-  image: ExportableImage,
+  in context: PublishingContext<Site>
+) {
+  saveImagesInCache(
+    imagesToCache: [sizeClass: exportableImage],
+    originalImageUrl: originalImageUrl,
+    in: context
+  )
+}
+
+func saveImagesInCache<Site: Website>(
+  imagesToCache: [SizeClass: ExportableImage],
+  originalImageUrl: URL,
   in context: PublishingContext<Site>
 ) {
   do {
     var cache = loadImageCache(context: context)
-    let imageData = try image.image.export(as: .webp)
-    let sizeClassData = sizeClass.fileSuffix.data(using: .utf8)!
-    let fileName = "\(UUID().uuidString).\(image.extension.rawValue)"
-    
-    if let imageHash = imageHash(originalImageUrl, sizeClassData: sizeClassData) {
-      cache[imageHash] = fileName
-      try saveImageInCache(fileName, image: imageData, in: context)
-      saveCacheToDisk(cache, in: context)
+    for imageToCache in imagesToCache {
+      let imageData = try imageToCache.value.image.export(as: .webp)
+      let sizeClassData = imageToCache.key.fileSuffix.data(using: .utf8)!
+      let fileName = "\(UUID().uuidString).\(imageToCache.value.extension.rawValue)"
+      
+      try saveImageInCache(
+        cache: &cache,
+        originalImageUrl: originalImageUrl,
+        imageData: imageData,
+        sizeClassData: sizeClassData,
+        fileName: fileName,
+        in: context
+      )
     }
-    else {
-      print("Failed to generate partial hash from Image")
-    }
+    saveCacheToDisk(cache, in: context)
   }
   catch {
     print("Failed to save Image in Cache: \(error)")
+  }
+}
+
+// MARK: - Optimizing functions
+
+fileprivate enum CachingError: Swift.Error {
+  case hashingError(String)
+}
+
+fileprivate func saveImageInCache<Site: Website>(
+  cache: inout [String: String],
+  originalImageUrl: URL,
+  imageData: Data,
+  sizeClassData: Data,
+  fileName: String,
+  in context: PublishingContext<Site>
+) throws {
+  if let imageHash = imageHash(originalImageUrl, sizeClassData: sizeClassData) {
+    cache[imageHash] = fileName
+    try saveImageInCache(fileName, image: imageData, in: context)
+  }
+  else {
+    throw CachingError.hashingError("Failed to generate partial hash from Image")
   }
 }
 
