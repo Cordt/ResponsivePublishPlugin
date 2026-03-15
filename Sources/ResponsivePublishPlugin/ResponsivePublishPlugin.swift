@@ -9,9 +9,6 @@ import Foundation
 import Publish
 import Ink
 import Files
-import SwiftGD
-
-
 var env: Environment = .live()
 
 extension Plugin {
@@ -36,7 +33,7 @@ extension Plugin {
         do {
           try images.forEach {
             let outputFolder = try context.createOutputFolder(at: at.appendingComponent($0.relativeOutputFolderPath.string))
-            try outputFolder.createFile(at: $0.fullFileName, contents: $0.image.export(as: .webp))
+            try outputFolder.createFile(at: $0.fullFileName, contents: $0.imageData)
           }
         }
         catch {

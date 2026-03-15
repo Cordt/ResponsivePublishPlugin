@@ -76,7 +76,7 @@ struct ExportableImage {
     let relativeOutputFolderPath: Path
     let name: String
     let `extension`: ImageFormat
-    let image: Image
+    let imageData: Data
     /// Name of the file including the file extension
     var fullFileName: String {
         return "\(name).\(`extension`)"
